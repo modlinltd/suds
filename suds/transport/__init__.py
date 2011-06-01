@@ -18,12 +18,33 @@
 Contains transport interface (classes).
 """
 
+import email.parser
+
+
+def decode_message(headers, raw_message):
+    if headers['content-type'].startswith('multipart/'):
+        raw_reply = str(headers) + raw_message
+        parser = email.parser.Parser()
+        decoded_reply = parser.parsestr(raw_reply)
+        payload_parts = (part.get_payload()
+                         for part in decoded_reply.get_payload())
+        return ''.join(payload_parts)
+    else:
+        return raw_message
+
 
 class TransportError(Exception):
-    def __init__(self, reason, httpcode, fp=None):
+    def __init__(self, reason, httpcode, fp=None, headers=None):
         Exception.__init__(self, reason)
         self.httpcode = httpcode
         self.fp = fp
+        self.headers = headers
+
+    def get_content(self):
+        if not hasattr(self, '_content'):
+            self._content = decode_message(self.headers, self.fp.read())
+        return self._content
+
 
 class Request:
     """
@@ -61,8 +82,10 @@ class Reply:
     A transport reply
     @ivar code: The http code returned.
     @type code: int
-    @ivar message: The message to be sent in a POST request.
+    @ivar message: The message decoded from the HTTP response.
     @type message: str
+    @ivar raw_message: The undecoded message from the HTTP response.
+    @type raw_message: str
     @ivar headers: The http headers to be used for the request.
     @type headers: dict
     """
@@ -77,9 +100,10 @@ class Reply:
         @type message: str
         """
         self.code = code
-        self.headers = headers
-        self.message = message
-        
+        self.headers = headers.dict
+        self.raw_message = message
+        self.message = decode_message(headers, self.raw_message)
+
     def __str__(self):
         s = []
         s.append('CODE: %s' % self.code)
