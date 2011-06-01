@@ -341,12 +341,12 @@ class Timezone:
     @cvar local: The (A) local TZ offset.
     @type local: int
     @cvar patten: The regex patten to match TZ.
-    @type patten: L{re.RegexObject}
+    @type patten: re.Pattern
     """
     
     pattern = re.compile('([zZ])|([\-\+][0-9]{2}:[0-9]{2})')
     
-    LOCAL = ( 0-time.timezone/60/60 )
+    LOCAL = ( 0-time.timezone/60/60 ) + time.daylight
 
     def __init__(self, offset=None):
         if offset is None:
