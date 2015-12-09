@@ -61,7 +61,7 @@ class HttpTransport(Transport):
             self.proxy = self.options.proxy
             return self.u2open(u2request)
         except u2.HTTPError, e:
-            raise TransportError(str(e), e.code, e.fp)
+            raise TransportError(str(e), e.code, e.fp, e.headers)
 
     def send(self, request):
         result = None
@@ -76,13 +76,13 @@ class HttpTransport(Transport):
             log.debug('sending:\n%s', request)
             fp = self.u2open(u2request)
             self.getcookies(fp, u2request)
-            result = Reply(200, fp.headers.dict, fp.read())
+            result = Reply(200, fp.headers, fp.read())
             log.debug('received:\n%s', result)
         except u2.HTTPError, e:
             if e.code in (202,204):
                 result = None
             else:
-                raise TransportError(e.msg, e.code, e.fp)
+                raise TransportError(e.msg, e.code, e.fp, e.headers)
         return result
 
     def addcookies(self, u2request):
